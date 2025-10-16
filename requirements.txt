@@ -1,0 +1,11 @@
+# Microsoft Agent Framework
+agent-framework
+
+# 环境变量管理
+python-dotenv
+
+# 可选：其他依赖
+# fastapi
+# uvicorn
+# redis
+# sqlalchemy
