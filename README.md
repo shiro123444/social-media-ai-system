@@ -38,7 +38,7 @@
 
 1. **克隆仓库**
 ```bash
-git clone https://github.com/your-username/social-media-ai-system.git
+git clone https://github.com/shiro123444/social-media-ai-system.git
 cd social-media-ai-system
 ```
 
@@ -231,8 +231,8 @@ workflow = (WorkflowBuilder()
 
 ## 📧 联系方式
 
-- 项目主页: [GitHub](https://github.com/your-username/social-media-ai-system)
-- 问题反馈: [Issues](https://github.com/your-username/social-media-ai-system/issues)
+- 项目主页: [GitHub](https://github.com/shiro123444/social-media-ai-system)
+- 问题反馈: [Issues](https://github.com/shiro123444/social-media-ai-system/issues)
 
 ## ⭐ Star History
 
@@ -240,4 +240,4 @@ workflow = (WorkflowBuilder()
 
 ---
 
-**注意**: 本项目仅供学习和研究使用，请遵守各平台的使用条款和相关法律法规。
+**注意**: 本项目仅供学习和研究使用，请遵守各平台的使用条款和相关法律法

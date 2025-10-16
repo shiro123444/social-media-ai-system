@@ -28,12 +28,13 @@ def create_deepseek_client():
         print()
         return None
     
-    # 使用 OpenAIChatClient，但配置为 DeepSeek 的端点
-    client = OpenAIChatClient(
-        model=model,
-        api_key=api_key,
-        base_url=base_url
-    )
+    # 设置环境变量供 OpenAIChatClient 使用
+    os.environ["OPENAI_API_KEY"] = api_key
+    os.environ["OPENAI_BASE_URL"] = base_url
+    os.environ["OPENAI_CHAT_MODEL_ID"] = model
+    
+    # 创建客户端（会自动读取环境变量）
+    client = OpenAIChatClient()
     
     print(f"✅ 成功连接到 DeepSeek API")
     print(f"📍 Base URL: {base_url}")
@@ -425,13 +426,8 @@ async def test_deepseek_connection(chat_client):
         print()
         return False
 
-async def main():
-    """主函数"""
-    print("=" * 50)
-    print("🎯 新媒体运营 AI 系统 - DeepSeek 版本")
-    print("=" * 50)
-    print()
-    
+async def prepare_agent():
+    """准备智能体（异步部分）"""
     # 创建 DeepSeek 客户端
     chat_client = create_deepseek_client()
     
@@ -451,7 +447,7 @@ async def main():
         
         # 使用模拟模式
         from simple_demo import create_mock_agent
-        demo_agent = create_mock_agent()
+        return create_mock_agent()
     else:
         # 测试连接
         connection_ok = await test_deepseek_connection(chat_client)
@@ -459,12 +455,22 @@ async def main():
         if not connection_ok:
             print("⚠️  API 连接测试失败，将使用模拟模式")
             from simple_demo import create_mock_agent
-            demo_agent = create_mock_agent()
+            return create_mock_agent()
         else:
             # 创建完整功能的智能体
-            demo_agent = create_social_media_agent(chat_client)
+            return create_social_media_agent(chat_client)
+
+def main():
+    """主函数"""
+    print("=" * 50)
+    print("🎯 新媒体运营 AI 系统 - DeepSeek 版本")
+    print("=" * 50)
+    print()
     
-    # 启动 DevUI
+    # 准备智能体（运行异步部分）
+    demo_agent = asyncio.run(prepare_agent())
+    
+    # 启动 DevUI（同步调用）
     print("🌐 启动 DevUI 界面...")
     print("📍 访问地址: http://localhost:8080")
     print("💡 在界面中与 AI 助手交互")
@@ -478,4 +484,4 @@ async def main():
     )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

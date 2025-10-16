@@ -251,7 +251,18 @@ def create_demo_system():
     
     return demo_agent, system
 
-async def main():
+async def run_workflow_demo(system):
+    """运行工作流演示（异步部分）"""
+    print("\n🔄 运行工作流演示...")
+    try:
+        results = await system.run_complete_workflow(
+            "分析人工智能在新媒体运营中的应用趋势，并为微信公众号创作相关内容"
+        )
+        print(f"\n🎉 演示完成！生成了 {len(results)} 个输出结果")
+    except Exception as e:
+        print(f"⚠️ 演示运行需要有效的 OpenAI API 密钥: {e}")
+
+def main():
     """主函数"""
     print("🎯 新媒体运营 AI 系统")
     print("基于 Microsoft Agent Framework 构建")
@@ -261,14 +272,7 @@ async def main():
     demo_agent, system = create_demo_system()
     
     # 可选：运行一个完整的工作流演示
-    print("\n🔄 运行工作流演示...")
-    try:
-        results = await system.run_complete_workflow(
-            "分析人工智能在新媒体运营中的应用趋势，并为微信公众号创作相关内容"
-        )
-        print(f"\n🎉 演示完成！生成了 {len(results)} 个输出结果")
-    except Exception as e:
-        print(f"⚠️ 演示运行需要有效的 OpenAI API 密钥: {e}")
+    asyncio.run(run_workflow_demo(system))
     
     # 启动 DevUI
     print(f"\n🌐 启动 DevUI 界面...")
@@ -284,4 +288,4 @@ async def main():
     )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
