@@ -1,0 +1,16 @@
+{{ title }}
+
+{{ lead }}
+
+{% for section in sections %}
+### {{ section.title }}
+{{ section.content }}
+{% endfor %}
+
+—— 结语 ——
+{{ outro }}
+
+[配图建议]
+{% for img in images %}
+- {{ img }}
+{% endfor %}

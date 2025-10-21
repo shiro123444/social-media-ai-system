@@ -1,0 +1,18 @@
+# Microsoft Agent Framework
+agent-framework>=1.0.0
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+
+# Templating
+jinja2>=3.1.0
+
+# MCP Support (included in agent-framework)
+# mcp[ws]>=1.13
+
+# Async Support
+asyncio-compat>=0.1.0
+
+# HTTP Client
+httpx>=0.24.0
+

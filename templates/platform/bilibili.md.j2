@@ -1,0 +1,12 @@
+# {{ title }}
+
+[封面建议] {{ cover_suggestions|default('') }}
+
+## 分镜脚本 (60s)
+{% for s in metadata.scenes %}
+- {{ s.time }} | 画面: {{ s.visual }}
+  配音: {{ s.text }}
+{% endfor %}
+
+[标签建议]
+{% if hashtags %}{% for tag in hashtags %}#{{ tag }} {% endfor %}{% endif %}

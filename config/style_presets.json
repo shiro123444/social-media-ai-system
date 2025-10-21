@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_comment": "语义化风格预设。不要在代码中硬编码风格，统一从此文件加载。",
+  "presets": {
+    "news": {
+      "tone": "客观、专业、克制",
+      "structure": ["导语", "背景", "数据与事实", "影响", "趋势与建议"],
+      "length": {
+        "wechat": {"min": 2000, "max": 3200},
+        "weibo": {"min": 140, "max": 600},
+        "bilibili": {"duration_sec": 60}
+      },
+      "emoji": false,
+      "hashtags": {
+        "max_count": 5,
+        "strategy": "仅使用与主题强相关的核心标签"
+      },
+      "forbidden": ["夸张承诺", "标题党措辞"]
+    },
+    "popular_science": {
+      "tone": "通俗、解释性、类比",
+      "structure": ["问题引入", "原理解释", "案例", "总结与建议"],
+      "length": {
+        "wechat": {"min": 1800, "max": 2800},
+        "weibo": {"min": 140, "max": 600},
+        "bilibili": {"duration_sec": 60}
+      },
+      "emoji": false,
+      "hashtags": {"max_count": 4},
+      "forbidden": ["过度拟人", "戏谑化敏感主题"]
+    },
+    "light": {
+      "tone": "轻松、友好、少量emoji",
+      "structure": ["钩子", "三个要点", "互动提问"],
+      "length": {
+        "wechat": {"min": 1200, "max": 2200},
+        "weibo": {"min": 80, "max": 300},
+        "bilibili": {"duration_sec": 45}
+      },
+      "emoji": true,
+      "hashtags": {"max_count": 6},
+      "forbidden": ["粗俗用语"]
+    },
+    "marketing": {
+      "tone": "理性转化、价值对比、适度号召",
+      "structure": ["痛点", "解决方案", "价值与证据", "行动号召"],
+      "length": {
+        "wechat": {"min": 1500, "max": 2600},
+        "weibo": {"min": 120, "max": 400},
+        "bilibili": {"duration_sec": 60}
+      },
+      "emoji": false,
+      "hashtags": {"max_count": 4},
+      "forbidden": ["夸大、虚假承诺", "贬损竞品"]
+    }
+  }
+}

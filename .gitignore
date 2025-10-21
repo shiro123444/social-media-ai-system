@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 环境变量
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 日志文件
+*.log
+logs/
+*.txt
+!requirements.txt
+!requirements-dev.txt
+
+# 输出文件
+output/
+*.json
+!config/*.json
+!.kiro/**/*.json
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# 测试文件
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 项目特定
+daily-hot-mcp/*.log
+cleanup_project.ps1
+api_response.json
+xhs_cookies/
+test_*.py
+!test_devui_final.py
+create_test_image.py
+test_image.jpg
+PROJECT_PITCH.md
+push_to_gitcode.ps1
+PRE_PUSH_CHECKLIST.md
+PUSH_GUIDE.md
+
+# Kiro IDE
+.kiro/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+chromedriver/

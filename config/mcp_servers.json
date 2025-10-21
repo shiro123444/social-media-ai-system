@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "daily-hot-mcp": {
+      "isActive": true,
+      "name": "daily-hot-mcp",
+      "type": "http",
+      "url": "http://localhost:8000/mcp",
+      "description": "每日热点新闻聚合服务，支持百度、知乎、微博、B站、抖音、小红书等30+平台热点获取"
+    }
+  }
+}

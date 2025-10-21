@@ -1,0 +1,145 @@
+{
+  "hotspot_sources": {
+    "readhub": {
+      "name": "Readhub 每日资讯",
+      "sources": [
+        {
+          "url": "https://rsshub.app/readhub/daily",
+          "description": "RSSHub 官方 - Readhub 每日热门",
+          "priority": 1,
+          "language": "zh"
+        },
+        {
+          "url": "https://rsshub.rssforever.com/readhub/daily",
+          "description": "RSSHub 镜像站 - Readhub 每日热门",
+          "priority": 2,
+          "language": "zh"
+        },
+        {
+          "url": "https://rss.shab.fun/readhub/daily",
+          "description": "RSSHub 个人实例 - Readhub 每日热门",
+          "priority": 3,
+          "language": "zh"
+        }
+      ]
+    },
+    "weibo": {
+      "name": "微博热搜",
+      "sources": [
+        {
+          "url": "https://rsshub.app/weibo/search/hot",
+          "description": "RSSHub 官方 - 微博热搜",
+          "priority": 1,
+          "note": "可能需要代理"
+        },
+        {
+          "url": "https://rsshub.rssforever.com/weibo/search/hot",
+          "description": "RSSHub 镜像站 - 微博热搜",
+          "priority": 2
+        }
+      ]
+    },
+    "zhihu": {
+      "name": "知乎热榜",
+      "sources": [
+        {
+          "url": "https://rsshub.app/zhihu/hotlist",
+          "description": "RSSHub 官方 - 知乎热榜",
+          "priority": 1
+        },
+        {
+          "url": "https://rsshub.rssforever.com/zhihu/hotlist",
+          "description": "RSSHub 镜像站 - 知乎热榜",
+          "priority": 2
+        }
+      ]
+    },
+    "tech_news": {
+      "name": "科技新闻",
+      "sources": [
+        {
+          "url": "https://www.theverge.com/rss/index.xml",
+          "description": "The Verge - 科技媒体",
+          "priority": 1,
+          "language": "en"
+        },
+        {
+          "url": "https://hnrss.org/frontpage",
+          "description": "Hacker News - 技术社区",
+          "priority": 1,
+          "language": "en"
+        },
+        {
+          "url": "https://rsshub.app/36kr/news/latest",
+          "description": "36氪 - 最新资讯",
+          "priority": 1,
+          "language": "zh"
+        },
+        {
+          "url": "https://rsshub.app/ithome/ranking/7days",
+          "description": "IT之家 - 7日热榜",
+          "priority": 2,
+          "language": "zh"
+        }
+      ]
+    },
+    "ai_news": {
+      "name": "AI 资讯",
+      "sources": [
+        {
+          "url": "https://rsshub.app/jiqizhixin/index",
+          "description": "机器之心 - AI 资讯",
+          "priority": 1,
+          "language": "zh"
+        },
+        {
+          "url": "https://rsshub.app/leiphone/newsflash",
+          "description": "雷锋网 - 快讯",
+          "priority": 2,
+          "language": "zh"
+        }
+      ]
+    },
+    "finance": {
+      "name": "财经资讯",
+      "sources": [
+        {
+          "url": "https://rsshub.app/wallstreetcn/news/global",
+          "description": "华尔街见闻 - 全球",
+          "priority": 1,
+          "language": "zh"
+        },
+        {
+          "url": "https://rsshub.app/cls/telegraph",
+          "description": "财联社 - 电报",
+          "priority": 2,
+          "language": "zh"
+        }
+      ]
+    }
+  },
+  "rsshub_instances": [
+    {
+      "url": "https://rsshub.app",
+      "description": "官方实例",
+      "location": "国外",
+      "note": "可能需要代理"
+    },
+    {
+      "url": "https://rsshub.rssforever.com",
+      "description": "镜像实例",
+      "location": "国内",
+      "note": "推荐使用"
+    },
+    {
+      "url": "https://rss.shab.fun",
+      "description": "个人实例",
+      "location": "国内"
+    }
+  ],
+  "usage_notes": {
+    "rsshub_format": "将 rsshub.app 替换为其他实例域名即可",
+    "example": "https://rsshub.app/weibo/search/hot -> https://rsshub.rssforever.com/weibo/search/hot",
+    "recommendation": "优先使用国内镜像实例，速度更快更稳定"
+  }
+}

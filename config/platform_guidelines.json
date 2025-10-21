@@ -1,0 +1,34 @@
+{
+  "_comment": "各平台长度、排版、标签与链接策略等。用于渲染与校验，不在代码中硬编码。",
+  "wechat": {
+    "title_max": 64,
+    "content_min": 1500,
+    "content_max": 5000,
+    "images_min": 3,
+    "images_max": 10,
+    "sections": ["引言", "正文-1", "正文-2", "趋势与建议", "结语"],
+    "link_policy": "链接少量且与主题强相关，避免外跳影响阅读",
+    "hashtag_policy": "不强调标签，但允许在文末添加2-3个关键词"
+  },
+  "weibo": {
+    "content_min": 50,
+    "content_max": 2000,
+    "images_max": 9,
+    "hashtags_min": 1,
+    "hashtags_max": 5,
+    "hashtag_prefix": "#",
+    "at_policy": "涉及机构或作者时使用@，避免滥用",
+    "link_policy": "允许短链，放在文末"
+  },
+  "bilibili": {
+    "script": {
+      "duration_sec": 60,
+      "sections": ["开场钩子", "核心信息-1", "核心信息-2", "总结CTA"],
+      "scene_keys": ["time", "visual", "text"]
+    },
+    "title_max": 80,
+    "tag_max": 10,
+    "cover_policy": "建议3-5个封面关键词",
+    "forbidden": ["夸张承诺", "不实信息"]
+  }
+}
