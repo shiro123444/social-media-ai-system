@@ -314,6 +314,9 @@ MCP 工具需要手动管理连接，不能在 Executor 初始化时就连接，
 3. 提 Issue
 4. 联系团队成员
 
+## 演示视频
+https://www.bilibili.com/video/BV1tksbzCE9M/
+
 ## License
 
 MIT License - 随便用，但后果自负。
