@@ -44,9 +44,9 @@
 
 ## 为什么选 Microsoft Agent Framework
 
-说实话，一开始我也纠结过用什么框架。市面上选择挺多的：LangChain、AutoGen、CrewAI... 但最后选了 Agent Framework，主要是这几个原因：
+说实话，一开始我也纠结过用什么框架。目前选择挺多的：LangChain、AutoGen、CrewAI... 但最后选了 Agent Framework，主要是这几个原因：
 
-### 1. 工作流模式真的很灵活
+### 1. 工作流模式及其灵活
 
 Agent Framework 支持好几种编排模式：
 - **Sequential（顺序）** - 像流水线一样，一个接一个执行，适合我这种"抓热点→分析→生成内容"的场景
@@ -76,7 +76,7 @@ async with MCPStdioTool(
 
 其他框架要接 MCP 还得自己写适配层，麻烦。
 
-### 3. DevUI 真的好用
+### 3. DevUI 
 
 Agent Framework 自带一个 Web UI（DevUI），可以实时看到：
 - 每个 Agent 在干什么
