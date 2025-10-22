@@ -1,4 +1,4 @@
-# 社交媒体 AI 工作流
+#  HotFlow AI - 基于 Agent Framework 的智能热点内容生产系统
 
 > 让新媒体运营从找选题中解放出来
 
