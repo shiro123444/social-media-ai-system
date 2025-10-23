@@ -88,4 +88,7 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+# 可执行文件
+*.exe
+
 chromedriver/

@@ -547,6 +547,72 @@ class XiaohongshuContentExecutor(Executor):
             error_msg = ChatMessage(role=Role.ASSISTANT, contents=[TextContent(text=error_result)])
             await ctx.send_message([error_msg])
 
+# ✅ 创建小红书内容生成 Executor（输出中间结果）
+class XiaohongshuContentExecutor(Executor):
+    """生成小红书文案的 executor"""
+    
+    def __init__(self, executor_id: str, client):
+        super().__init__(id=executor_id)
+        self.client = client
+        logger.info(f"✅ XiaohongshuContentExecutor 创建: {executor_id}")
+    
+    @handler
+    async def create_content(self, messages: list[ChatMessage], ctx: WorkflowContext[list[ChatMessage], str]) -> None:
+        """生成小红书文案"""
+        logger.info(f"[{self.id}] 开始生成小红书文案")
+        
+        try:
+            # 创建小红书内容生成 agent
+            xiaohongshu_agent = self.client.create_agent(
+                name="xiaohongshu_creator",
+                instructions=XIAOHONGSHU_INSTRUCTIONS
+            )
+            
+            # 执行生成
+            result = await xiaohongshu_agent.run(messages)
+            result_text = result.text if hasattr(result, 'text') else str(result)
+            
+            logger.info(f"[{self.id}] 文案生成完成，长度: {len(result_text)}")
+            
+            # ✅ 自动添加默认图片
+            import json
+            try:
+                content_json = json.loads(result_text)
+                images = content_json.get("images", [])
+                
+                if not images:
+                    default_images_str = os.getenv("XHS_DEFAULT_IMAGES", "")
+                    if default_images_str:
+                        images = [img.strip() for img in default_images_str.split(",") if img.strip()]
+                        content_json["images"] = images
+                        result_text = json.dumps(content_json, ensure_ascii=False)
+                        logger.info(f"[{self.id}] 已添加默认图片: {images}")
+                
+                # 创建内容预览
+                title = content_json.get("title", "")
+                content = content_json.get("content", "")
+                tags = content_json.get("tags", [])
+                
+            except json.JSONDecodeError:
+                logger.warning(f"[{self.id}] 文案不是有效的 JSON，跳过图片处理")
+            
+            # ✅ 发送完整数据到下一个 executor
+            from agent_framework import Role, TextContent
+            response_msg = ChatMessage(
+                role=Role.ASSISTANT,
+                contents=[TextContent(text=result_text)]
+            )
+            await ctx.send_message([response_msg])
+            
+            # ✅ 同时输出中间结果给用户
+            summary = f"✍️ **步骤 3: 小红书文案生成完成**\n\n文案长度: {len(result_text)} 字符\n\n完整内容：\n```json\n{result_text}\n```\n\n---\n"
+            await ctx.yield_output(summary)
+            
+        except Exception as e:
+            logger.error(f"[{self.id}] 文案生成失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+
 xiaohongshu_executor = XiaohongshuContentExecutor(
     executor_id="xiaohongshu_content_executor",
     client=client
@@ -566,7 +632,10 @@ class XiaohongshuPublisher(Executor):
     @handler
     async def publish_to_xhs(self, messages: list[ChatMessage], ctx: WorkflowContext[Never, str]) -> None:
         """发布内容到小红书（使用 xiaohongshu-mcp）"""
-        logger.info(f"[{self.id}] 开始发布到小红书")
+        logger.info(f"[{self.id}] ========================================")
+        logger.info(f"[{self.id}] 🚀 发布 Executor 被触发！")
+        logger.info(f"[{self.id}] 收到 {len(messages)} 条消息")
+        logger.info(f"[{self.id}] ========================================")
         
         try:
             # 提取小红书文案
@@ -633,51 +702,86 @@ class XiaohongshuPublisher(Executor):
             async with MCPStreamableHTTPTool(
                 name="xiaohongshu-mcp",
                 url=self.xhs_mcp_url,
-                load_tools=True
+                load_tools=True,
+                load_prompts=False,  # ✅ 避免 "Method not found" 错误
+                timeout=300  # ✅ 5分钟超时，发布操作可能耗时较长
             ) as xhs_tool:
                 logger.info(f"[{self.id}] xiaohongshu-mcp 已连接")
                 
-                # 创建发布 agent
-                publisher_agent = self.client.create_agent(
-                    name="xhs_publisher",
-                    instructions="""你是小红书发布助手。
-
-**重要规则**：
-1. 标题不超过 20 个字
-2. 内容不超过 1000 个字
-3. 必须包含图片（本地绝对路径或 HTTP 链接）
-4. 使用 publish_content 工具发布图文内容
-
-**任务**：
-使用提供的标题、内容和图片发布到小红书。
-
-**输出格式**：
-发布成功后返回结果信息。
-""",
-                    tools=[xhs_tool]
-                )
-                
-                # 构造发布请求
                 # 将标签添加到内容末尾
                 content_with_tags = content
                 if tags:
                     tags_str = " ".join([f"#{tag}" for tag in tags])
                     content_with_tags = f"{content}\n\n{tags_str}"
                 
-                publish_request = f"""请发布小红书笔记：
+                # ✅ 方案：直接调用工具（推荐，避免大模型误解）
+                logger.info(f"[{self.id}] 直接调用 publish_content 工具...")
+                logger.info(f"[{self.id}]   标题: {title}")
+                logger.info(f"[{self.id}]   内容长度: {len(content_with_tags)}")
+                logger.info(f"[{self.id}]   图片: {images}")
+                logger.info(f"[{self.id}]   标签: {tags}")
+                
+                try:
+                    # 直接调用 publish_content 工具
+                    # 正确的调用方式：工具名作为第一个参数，其他参数作为关键字参数
+                    result = await xhs_tool.call_tool(
+                        "publish_content",
+                        title=title,
+                        content=content_with_tags,
+                        images=images,
+                        tags=tags or []
+                    )
+                    
+                    result_text = str(result)
+                    logger.info(f"[{self.id}] 工具调用成功")
+                    
+                except Exception as tool_error:
+                    logger.error(f"[{self.id}] 直接调用工具失败: {tool_error}")
+                    logger.info(f"[{self.id}] 尝试使用 Agent 方式...")
+                    
+                    # 备用方案：使用 Agent
+                    publisher_agent = self.client.create_agent(
+                        name="xhs_publisher",
+                        instructions="""你是小红书发布助手。
+
+**可用工具**: publish_content
+
+**工具参数说明**:
+- title (string, required): 内容标题（最多20个字）
+- content (string, required): 正文内容（最多1000个字）
+- images (array of strings, required): 图片路径列表
+  * 支持本地绝对路径（推荐）: 如 "D:\\Pictures\\image.jpg"
+  * 支持 HTTP/HTTPS 链接: 如 "https://example.com/image.jpg"
+  * 至少需要1张图片
+- tags (array of strings, optional): 话题标签列表
+
+**重要**: images 参数可以直接使用本地文件路径，不需要上传到网络。
+
+**任务**: 使用提供的标题、内容和图片调用 publish_content 工具发布到小红书。
+
+**示例**:
+{
+  "title": "春天的花朵",
+  "content": "今天拍到了美丽的樱花",
+  "images": ["D:\\Pictures\\spring.jpg"],
+  "tags": ["春天", "樱花"]
+}
+""",
+                        tools=[xhs_tool]
+                    )
+                    
+                    publish_request = f"""请发布小红书笔记：
 
 标题：{title}
 内容：{content_with_tags}
 图片：{json.dumps(images, ensure_ascii=False)}
+标签：{json.dumps(tags or [], ensure_ascii=False)}
 
 使用 publish_content 工具进行发布。
 """
-                
-                logger.info(f"[{self.id}] 发送发布请求...")
-                
-                # 执行发布
-                result = await publisher_agent.run(publish_request)
-                result_text = result.text if hasattr(result, 'text') else str(result)
+                    
+                    result = await publisher_agent.run(publish_request)
+                    result_text = result.text if hasattr(result, 'text') else str(result)
                 
                 logger.info(f"[{self.id}] 发布完成: {result_text[:200]}")
                 
@@ -719,14 +823,14 @@ logger.info(f"✅ Xiaohongshu Publisher 创建完成")
 # 1. Hotspot Executor - 使用 daily-hot-mcp 获取热点
 # 2. Analysis Executor - 使用 think-tool 深度分析
 # 3. Xiaohongshu Content Executor - 生成小红书文案
-# 4. Xiaohongshu Publisher - 发布（模拟）
+# 4. Xiaohongshu Publisher - 发布到小红书
 workflow = (
     SequentialBuilder()
     .participants([
         hotspot_executor,      # ✅ 获取热点（daily-hot-mcp）
         analysis_executor,     # ✅ 深度分析（think-tool）
         xiaohongshu_executor,  # ✅ 生成小红书文案
-        xhs_publisher          # ✅ 发布到小红书（模拟）
+        xhs_publisher          # ✅ 发布到小红书
     ])
     .build()
 )
