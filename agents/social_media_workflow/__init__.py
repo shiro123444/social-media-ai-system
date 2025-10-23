@@ -631,99 +631,102 @@ class XiaohongshuPublisher(Executor):
     
     @handler
     async def publish_to_xhs(self, messages: list[ChatMessage], ctx: WorkflowContext[Never, str]) -> None:
-        """发布内容到小红书（使用 xiaohongshu-mcp）"""
+        """发布内容到小红书（使用 xiaohongshu-mcp）- 带重试机制"""
         logger.info(f"[{self.id}] ========================================")
         logger.info(f"[{self.id}] 🚀 发布 Executor 被触发！")
         logger.info(f"[{self.id}] 收到 {len(messages)} 条消息")
         logger.info(f"[{self.id}] ========================================")
         
+        # 提取小红书文案
+        content_text = ""
+        for msg in messages:
+            if hasattr(msg, 'text') and msg.text:
+                content_text = msg.text
+                break
+        
+        logger.info(f"[{self.id}] 提取到文案，长度: {len(content_text)}")
+        
+        import json
+        
+        # 解析文案 JSON
         try:
-            # 提取小红书文案
-            content_text = ""
-            for msg in messages:
-                if hasattr(msg, 'text') and msg.text:
-                    content_text = msg.text
-                    break
+            content_json = json.loads(content_text)
+            title = content_json.get("title", "")
+            content = content_json.get("content", "")
+            tags = content_json.get("tags", [])
+            images = content_json.get("images", [])
             
-            logger.info(f"[{self.id}] 提取到文案，长度: {len(content_text)}")
-            
-            import json
-            
-            # 解析文案 JSON
-            try:
-                content_json = json.loads(content_text)
-                title = content_json.get("title", "")
-                content = content_json.get("content", "")
-                tags = content_json.get("tags", [])
-                images = content_json.get("images", [])  # 获取图片列表
-            except json.JSONDecodeError:
-                logger.error(f"[{self.id}] 文案不是有效的 JSON 格式")
-                error_result = '{"status": "failed", "message": "文案格式错误，不是有效的 JSON"}'
-                await ctx.yield_output(error_result)
+            # ✅ 限制标签数量（减少 DOM 操作，提高成功率）
+            if len(tags) > 2:
+                logger.warning(f"[{self.id}] 标签过多 ({len(tags)}个)，限制为2个以提高成功率")
+                tags = tags[:2]
+                
+        except json.JSONDecodeError:
+            logger.error(f"[{self.id}] 文案不是有效的 JSON 格式")
+            error_result = '{"status": "failed", "message": "文案格式错误，不是有效的 JSON"}'
+            await ctx.yield_output(error_result)
+            return
+        
+        # 检查标题和内容长度（小红书限制）
+        if len(title) > 20:
+            logger.warning(f"[{self.id}] 标题超过 20 字，将被截断")
+            title = title[:20]
+        
+        if len(content) > 1000:
+            logger.warning(f"[{self.id}] 内容超过 1000 字，将被截断")
+            content = content[:1000]
+        
+        # 检查是否有图片，如果没有则使用默认图片
+        if not images:
+            default_images_str = os.getenv("XHS_DEFAULT_IMAGES", "")
+            if default_images_str:
+                images = [img.strip() for img in default_images_str.split(",") if img.strip()]
+                logger.info(f"[{self.id}] 使用默认图片: {images}")
+            else:
+                logger.warning(f"[{self.id}] 未提供图片且无默认图片配置")
+                final_output = f"⚠️ **发布跳过**\n\n标题: {title}\n标签: {', '.join(tags)}\n\n原因：小红书发布需要图片\n\n---\n💡 提示：在 .env 中配置 XHS_DEFAULT_IMAGES 环境变量"
+                await ctx.yield_output(final_output)
                 return
-            
-            # 检查标题和内容长度（小红书限制）
-            if len(title) > 20:
-                logger.warning(f"[{self.id}] 标题超过 20 字，将被截断")
-                title = title[:20]
-            
-            if len(content) > 1000:
-                logger.warning(f"[{self.id}] 内容超过 1000 字，将被截断")
-                content = content[:1000]
-            
-            # 检查是否有图片，如果没有则使用默认图片
-            if not images:
-                # 从环境变量获取默认图片路径
-                default_images_str = os.getenv("XHS_DEFAULT_IMAGES", "")
-                if default_images_str:
-                    # 支持多个图片，用逗号分隔
-                    images = [img.strip() for img in default_images_str.split(",") if img.strip()]
-                    logger.info(f"[{self.id}] 使用默认图片: {images}")
-                else:
-                    logger.warning(f"[{self.id}] 未提供图片且无默认图片配置")
-                    result_text = json.dumps({
-                        "status": "skipped",
-                        "message": "小红书发布需要图片。请在 .env 中配置 XHS_DEFAULT_IMAGES 或在文案中提供图片路径。",
-                        "title": title,
-                        "content": content,
-                        "tags": tags
-                    }, ensure_ascii=False, indent=2)
+        
+        # 重试配置
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    logger.info(f"[{self.id}] 🔄 重试 {attempt}/{max_retries-1}...")
+                    await ctx.yield_output(f"⚠️ 发布失败，正在重试 ({attempt}/{max_retries-1})...\n")
+                    import asyncio
+                    await asyncio.sleep(retry_delay)
+                
+                # ✅ 使用 xiaohongshu-mcp 发布
+                from agent_framework import MCPStreamableHTTPTool
+                
+                logger.info(f"[{self.id}] 连接到 xiaohongshu-mcp: {self.xhs_mcp_url}")
+                
+                async with MCPStreamableHTTPTool(
+                    name="xiaohongshu-mcp",
+                    url=self.xhs_mcp_url,
+                    load_tools=True,
+                    load_prompts=False,
+                    timeout=300
+                ) as xhs_tool:
+                    logger.info(f"[{self.id}] xiaohongshu-mcp 已连接")
                     
-                    final_output = f"⚠️ **发布跳过**\n\n标题: {title}\n标签: {', '.join(tags)}\n\n原因：小红书发布需要图片\n\n完整内容：\n{content_text}\n\n---\n💡 提示：在 .env 中配置 XHS_DEFAULT_IMAGES 环境变量"
-                    await ctx.yield_output(final_output)
-                    return
-            
-            # ✅ 使用 xiaohongshu-mcp 发布
-            from agent_framework import MCPStreamableHTTPTool
-            
-            logger.info(f"[{self.id}] 连接到 xiaohongshu-mcp: {self.xhs_mcp_url}")
-            
-            # 真实发布
-            async with MCPStreamableHTTPTool(
-                name="xiaohongshu-mcp",
-                url=self.xhs_mcp_url,
-                load_tools=True,
-                load_prompts=False,  # ✅ 避免 "Method not found" 错误
-                timeout=300  # ✅ 5分钟超时，发布操作可能耗时较长
-            ) as xhs_tool:
-                logger.info(f"[{self.id}] xiaohongshu-mcp 已连接")
-                
-                # 将标签添加到内容末尾
-                content_with_tags = content
-                if tags:
-                    tags_str = " ".join([f"#{tag}" for tag in tags])
-                    content_with_tags = f"{content}\n\n{tags_str}"
-                
-                # ✅ 方案：直接调用工具（推荐，避免大模型误解）
-                logger.info(f"[{self.id}] 直接调用 publish_content 工具...")
-                logger.info(f"[{self.id}]   标题: {title}")
-                logger.info(f"[{self.id}]   内容长度: {len(content_with_tags)}")
-                logger.info(f"[{self.id}]   图片: {images}")
-                logger.info(f"[{self.id}]   标签: {tags}")
-                
-                try:
+                    # 将标签添加到内容末尾
+                    content_with_tags = content
+                    if tags:
+                        tags_str = " ".join([f"#{tag}" for tag in tags])
+                        content_with_tags = f"{content}\n\n{tags_str}"
+                    
+                    logger.info(f"[{self.id}] 直接调用 publish_content 工具...")
+                    logger.info(f"[{self.id}]   标题: {title}")
+                    logger.info(f"[{self.id}]   内容长度: {len(content_with_tags)}")
+                    logger.info(f"[{self.id}]   图片: {images}")
+                    logger.info(f"[{self.id}]   标签数量: {len(tags)} (限制为2个)")
+                    
                     # 直接调用 publish_content 工具
-                    # 正确的调用方式：工具名作为第一个参数，其他参数作为关键字参数
                     result = await xhs_tool.call_tool(
                         "publish_content",
                         title=title,
@@ -733,63 +736,13 @@ class XiaohongshuPublisher(Executor):
                     )
                     
                     result_text = str(result)
-                    logger.info(f"[{self.id}] 工具调用成功")
+                    logger.info(f"[{self.id}] ✅ 工具调用成功")
                     
-                except Exception as tool_error:
-                    logger.error(f"[{self.id}] 直接调用工具失败: {tool_error}")
-                    logger.info(f"[{self.id}] 尝试使用 Agent 方式...")
-                    
-                    # 备用方案：使用 Agent
-                    publisher_agent = self.client.create_agent(
-                        name="xhs_publisher",
-                        instructions="""你是小红书发布助手。
-
-**可用工具**: publish_content
-
-**工具参数说明**:
-- title (string, required): 内容标题（最多20个字）
-- content (string, required): 正文内容（最多1000个字）
-- images (array of strings, required): 图片路径列表
-  * 支持本地绝对路径（推荐）: 如 "D:\\Pictures\\image.jpg"
-  * 支持 HTTP/HTTPS 链接: 如 "https://example.com/image.jpg"
-  * 至少需要1张图片
-- tags (array of strings, optional): 话题标签列表
-
-**重要**: images 参数可以直接使用本地文件路径，不需要上传到网络。
-
-**任务**: 使用提供的标题、内容和图片调用 publish_content 工具发布到小红书。
-
-**示例**:
-{
-  "title": "春天的花朵",
-  "content": "今天拍到了美丽的樱花",
-  "images": ["D:\\Pictures\\spring.jpg"],
-  "tags": ["春天", "樱花"]
-}
-""",
-                        tools=[xhs_tool]
-                    )
-                    
-                    publish_request = f"""请发布小红书笔记：
-
-标题：{title}
-内容：{content_with_tags}
-图片：{json.dumps(images, ensure_ascii=False)}
-标签：{json.dumps(tags or [], ensure_ascii=False)}
-
-使用 publish_content 工具进行发布。
-"""
-                    
-                    result = await publisher_agent.run(publish_request)
-                    result_text = result.text if hasattr(result, 'text') else str(result)
-                
-                logger.info(f"[{self.id}] 发布完成: {result_text[:200]}")
-                
-                # 输出最终结果
-                final_output = f"""🚀 **发布完成**
+                    # 输出最终结果
+                    final_output = f"""🚀 **发布完成**
 
 标题: {title}
-标签: {', '.join(tags)}
+标签: {', '.join(tags)} (限制为{len(tags)}个)
 图片数量: {len(images)}
 
 发布结果：
@@ -798,15 +751,54 @@ class XiaohongshuPublisher(Executor):
 ---
 ✅ Workflow 执行完成！
 """
-                await ctx.yield_output(final_output)
+                    await ctx.yield_output(final_output)
+                    
+                    # ✅ 发布成功，跳出重试循环
+                    return
+                    
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"[{self.id}] 尝试 {attempt + 1} 失败: {error_msg}")
                 
-        except Exception as e:
-            logger.error(f"[{self.id}] 发布失败: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            # 返回错误信息
-            error_result = f'{{"status": "failed", "message": "发布失败: {str(e)}"}}'
-            await ctx.yield_output(error_result)
+                # 检查是否是 DOM 分离错误（标签输入问题）
+                is_dom_error = "Node is detached" in error_msg or "detached from document" in error_msg
+                
+                if is_dom_error:
+                    logger.warning(f"[{self.id}] 检测到 DOM 分离错误（标签输入问题）")
+                
+                # 如果还有重试机会，继续重试
+                if attempt < max_retries - 1:
+                    logger.info(f"[{self.id}] 将在 {retry_delay} 秒后重试...")
+                    continue
+                else:
+                    # 所有重试都失败了
+                    logger.error(f"[{self.id}] 所有重试均失败")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    
+                    # 返回详细错误信息
+                    error_result = f"""❌ **发布失败**
+
+标题: {title}
+标签: {', '.join(tags)}
+
+错误信息：
+{error_msg}
+
+重试次数: {max_retries}
+
+---
+💡 故障排除建议：
+1. 检查 xiaohongshu-mcp 服务是否正常运行
+2. 检查浏览器是否已登录小红书
+3. 尝试减少标签数量（当前已限制为2个）
+4. 查看 xiaohongshu-mcp 日志获取详细错误信息
+5. 考虑向 xiaohongshu-mcp 项目提交 issue
+
+这是 xiaohongshu-mcp 的浏览器自动化问题，不是工作流代码问题。
+"""
+                    await ctx.yield_output(error_result)
+                    return
 
 # 从环境变量获取 xiaohongshu-mcp URL（默认 localhost:18060）
 xhs_mcp_url = os.getenv("XIAOHONGSHU_MCP_URL", "http://localhost:18060/mcp")
