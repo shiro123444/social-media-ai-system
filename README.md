@@ -235,25 +235,76 @@ MCP 工具需要手动管理连接，不能在 Executor 初始化时就连接，
 
 详细的踩坑记录在 `Learn.md` 里。
 
-## 小红书发布功能
+## 小红书自动发布功能
 
-本来想做自动发布到小红书的功能，用的是 xhs_mcp_server 这个工具。测试下来发现：
+现在支持**全自动发布**到小红书！使用 [xiaohongshu-mcp](https://github.com/xpzouying/xiaohongshu-mcp) 实现。
 
-- ✅ 能连上，能获取工具列表
-- ✅ Cookie 登录正常
-- ❌ 发布时找不到上传按钮（新版本页面结构可能变了）
+### 功能特点
 
-目前的解决方案是**半自动化**：
-1. 工作流生成小红书文案
-2. 你复制文案到小红书 App
-3. 手动选图发布
+- ✅ **全自动发布** - 从热点抓取到发布一气呵成
+- ✅ **智能文案生成** - 每条新闻分两段：📰 新闻内容 + 💭 时评观点
+- ✅ **详细内容** - 包含时间、数据、来源、热度等细节
+- ✅ **自动配图** - 支持配置默认图片，无需手动上传
+- ✅ **符合规范** - 标题 ≤20 字，内容 ≤1000 字
 
-这样反而更好，因为：
-- 可以最后检查内容质量
-- 可以选更合适的图片
-- 避免自动化发布的账号风险
+### 工作流程
 
-配置方法看 `docs/XIAOHONGSHU_SETUP.md`。
+```
+热点追踪 → 深度分析 → 生成文案 → 自动发布
+   ↓           ↓          ↓          ↓
+ Daily Hot   think-tool  DeepSeek   xiaohongshu-mcp
+```
+
+### 文案格式示例
+
+```
+标题：🔥10.23热搜！学生梗+金庸
+
+内容：
+姐妹们！10月23日的热搜真的太炸了！😱
+
+📰 学生满口「包的包的」、「666」等网络梗，这将带来哪些深远影响？
+10月22日，一篇关于学生语言习惯的文章在知乎引发热议，获得797万热度...
+
+💭 这个现象确实值得关注！网络梗虽然有趣，但过度使用可能会影响学生的
+正式表达能力...
+
+📰 金庸小说有哪些情节是成年后才能看懂的？
+10月23日，这个话题在知乎热榜获得428万热度...
+
+💭 经典就是经典！成年后重读金庸，才发现那些看似简单的情节背后...
+
+你们怎么看？评论区聊聊！👇
+```
+
+### 快速开始
+
+1. **下载 xiaohongshu-mcp**：
+   - 访问 [Releases](https://github.com/xpzouying/xiaohongshu-mcp/releases)
+   - 下载 `xiaohongshu-login-windows-amd64.exe` 和 `xiaohongshu-mcp-windows-amd64.exe`
+
+2. **配置环境变量**（`.env`）：
+   ```env
+   XIAOHONGSHU_MCP_URL=http://localhost:18060/mcp
+   XHS_DEFAULT_IMAGES=C:\Users\YourName\Pictures\default.jpg
+   ```
+
+3. **登录小红书**：
+   ```powershell
+   .\xiaohongshu-login-windows-amd64.exe
+   ```
+
+4. **启动 MCP 服务**：
+   ```powershell
+   .\xiaohongshu-mcp-windows-amd64.exe
+   ```
+
+5. **运行工作流**：
+   ```bash
+   python test_devui_final.py
+   ```
+
+详细配置方法看 `docs/XIAOHONGSHU_SETUP.md`。
 
 ## 实际效果
 
