@@ -3,7 +3,7 @@
 import asyncio
 import re
 from datetime import datetime
-from daily_hot_mcp.utils import http_client
+from daily_hot_mcp.utils import http_client, cache, logger
 from fastmcp.tools import Tool
 
 async def get_csrf_token() -> str:
@@ -23,6 +23,17 @@ async def get_csrf_token() -> str:
 
 async def get_douyin_trending_func() -> list:
     """获取抖音热搜榜数据"""
+    cache_key = "douyin_trending"
+    
+    # 尝试从缓存获取
+    try:
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info("从缓存获取抖音热搜数据")
+            return cached_data
+    except Exception as e:
+        logger.warning(f"读取缓存失败: {e}")
+    
     csrf_token = await get_csrf_token()
     headers = {}
     if csrf_token:
@@ -62,6 +73,14 @@ async def get_douyin_trending_func() -> list:
         if item.get("sentence_id"):
             result_item["link"] = f"https://www.douyin.com/hot/{item['sentence_id']}"
         results.append(result_item)
+    
+    # 缓存结果
+    try:
+        cache.set(cache_key, results)
+        logger.info(f"获取抖音热搜数据成功，共{len(results)}条")
+    except Exception as e:
+        logger.warning(f"写入缓存失败: {e}")
+    
     return results
 
 douyin_trending_tool = Tool.from_function(

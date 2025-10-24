@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 from pydantic import Field
 from typing import Annotated
-from daily_hot_mcp.utils import http_client
+from daily_hot_mcp.utils import http_client, cache, logger
 from fastmcp.tools import Tool
 
 
@@ -12,6 +12,17 @@ async def get_zhihu_trending_func(
     limit: Annotated[int, Field(description="返回结果数量限制")] = 50
 ) -> list:
     """获取知乎热榜数据"""
+    cache_key = "zhihu_trending"
+    
+    # 尝试从缓存获取
+    try:
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info("从缓存获取知乎热榜数据")
+            return cached_data
+    except Exception as e:
+        logger.warning(f"读取缓存失败: {e}")
+    
     headers = {
         'User-Agent': 'osee2unifiedRelease/22916 osee2unifiedReleaseVersion/10.49.0 Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
         'x-app-versioncode': '22916',
@@ -67,6 +78,13 @@ async def get_zhihu_trending_func(
             result_item["link"] = f"https://www.zhihu.com/question/{question_id}"
         
         results.append(result_item)
+    
+    # 缓存结果
+    try:
+        cache.set(cache_key, results)
+        logger.info(f"获取知乎热榜数据成功，共{len(results)}条")
+    except Exception as e:
+        logger.warning(f"写入缓存失败: {e}")
     
     return results
 

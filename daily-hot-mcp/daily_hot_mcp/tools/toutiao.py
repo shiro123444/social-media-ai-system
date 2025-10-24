@@ -2,12 +2,23 @@
 
 import asyncio
 from urllib.parse import urlparse, urlunparse
-from daily_hot_mcp.utils import http_client
+from daily_hot_mcp.utils import http_client, cache, logger
 from fastmcp.tools import Tool
 
 
 async def get_toutiao_trending_func() -> list:
     """获取今日头条热榜数据"""
+    cache_key = "toutiao_trending"
+    
+    # 尝试从缓存获取
+    try:
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info("从缓存获取今日头条热榜数据")
+            return cached_data
+    except Exception as e:
+        logger.warning(f"读取缓存失败: {e}")
+    
     response = await http_client.get(
         "https://www.toutiao.com/hot-event/hot-board/",
         params={"origin": "toutiao_pc"}
@@ -35,6 +46,13 @@ async def get_toutiao_trending_func() -> list:
             "popularity": item["HotValue"],
             "link": clean_url,
         })
+    
+    # 缓存结果
+    try:
+        cache.set(cache_key, results)
+        logger.info(f"获取今日头条热榜数据成功，共{len(results)}条")
+    except Exception as e:
+        logger.warning(f"写入缓存失败: {e}")
     
     return results
 
